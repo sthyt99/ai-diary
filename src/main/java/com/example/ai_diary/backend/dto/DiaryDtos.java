@@ -4,6 +4,8 @@ import java.time.Instant;
 
 import com.example.ai_diary.backend.domain.Visibility;
 
+import jakarta.validation.constraints.NotBlank;
+
 public class DiaryDtos {
 
 	/**
@@ -11,6 +13,7 @@ public class DiaryDtos {
 	 */
 	public static class CreateRequest {
 
+		@NotBlank
 		private String content;
 		private Visibility visibility;
 		
