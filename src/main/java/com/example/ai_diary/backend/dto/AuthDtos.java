@@ -1,5 +1,9 @@
 package com.example.ai_diary.backend.dto;
 
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
+
 /**
  * 認証DTO関連
  */
@@ -8,8 +12,15 @@ public class AuthDtos {
 	/** サインアップ（受取） */
 	public static class SignupRequest {
 		
+		@Email
+		@NotBlank
 		private String email;
+		
+		@NotBlank
+		@Size(min = 8, max = 128)
 		private String password;
+		
+		@NotBlank @Size(max = 64)
 		private String displayName;
 		
 		// getters/setters
@@ -24,7 +35,11 @@ public class AuthDtos {
 	/** ログイン（受取） */
 	public static class LoginRequest {
 		
+		@Email
+		@NotBlank
 		private String email;
+		
+		@NotBlank
 		private String password;
 		
 		// getters/setters
