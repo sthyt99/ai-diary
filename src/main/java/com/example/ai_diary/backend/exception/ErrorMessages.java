@@ -14,7 +14,11 @@ public class ErrorMessages {
 	public static final String VALIDATION_PARAM_ERROR = "パラメータに誤りがあります。";
 	public static final String BAD_REQUEST_MISSING_PARAM = "必須パラメータが不足しています: ";
 	public static final String BAD_REQUEST_NOT_READABLE = "リクエストボディの解析に失敗しました。";
+	public static final String EMAIL_ALREADY_USED = "このメールアドレスは既に使用されています。";
+	public static final String DIARY_CONTENT_EMPTY = "日記の内容を入力してください。";
+	public static final String USER_ID_REQUIRED    = "ユーザーIDは必須です。";
 
+	
 	// 401 / 403
 	public static final String UNAUTHORIZED = "認証が必要です。";
 	public static final String FORBIDDEN = "この操作を行う権限がありません。";
