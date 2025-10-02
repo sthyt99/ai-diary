@@ -17,6 +17,7 @@ public class ErrorMessages {
 	public static final String EMAIL_ALREADY_USED = "このメールアドレスは既に使用されています。";
 	public static final String DIARY_CONTENT_EMPTY = "日記の内容を入力してください。";
 	public static final String USER_ID_REQUIRED    = "ユーザーIDは必須です。";
+	public static final String USER_NOT_FOUND = "ユーザーが見つかりません: ";
 
 	
 	// 401 / 403
