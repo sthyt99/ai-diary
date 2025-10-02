@@ -14,6 +14,7 @@ import com.example.ai_diary.backend.domain.User;
 import com.example.ai_diary.backend.dto.AuthDtos.AuthResponse;
 import com.example.ai_diary.backend.dto.AuthDtos.LoginRequest;
 import com.example.ai_diary.backend.dto.AuthDtos.SignupRequest;
+import com.example.ai_diary.backend.security.JwtUtil;
 import com.example.ai_diary.backend.service.UserService;
 
 import jakarta.validation.Valid;
