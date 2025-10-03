@@ -15,10 +15,16 @@ public class ErrorMessages {
 	public static final String BAD_REQUEST_MISSING_PARAM = "必須パラメータが不足しています: ";
 	public static final String BAD_REQUEST_NOT_READABLE = "リクエストボディの解析に失敗しました。";
 	public static final String EMAIL_ALREADY_USED = "このメールアドレスは既に使用されています。";
+	public static final String USER_NOT_FOUND = "ユーザーが見つかりません: ";
+	public static final String INVALID_EMAIL = "メールアドレスが不正です: ";
+	public static final String PASSWORD_REQUIRED = "パスワードは必須です";
+    public static final String PASSWORD_TOO_WEAK = "パスワードは8文字以上にしてください";
+    public static final String DISPLAY_NAME_REQUIRED = "表示名は必須です";
+    // 日記関連
 	public static final String DIARY_CONTENT_EMPTY = "日記の内容を入力してください。";
 	public static final String USER_ID_REQUIRED    = "ユーザーIDは必須です。";
-	public static final String USER_NOT_FOUND = "ユーザーが見つかりません: ";
-
+    public static final String DIARY_NOT_FOUND = "日記が見つかりません";
+    public static final String DIARY_ACCESS_DENIED = "この日記を閲覧する権限がありません";
 	
 	// 401 / 403
 	public static final String UNAUTHORIZED = "認証が必要です。";

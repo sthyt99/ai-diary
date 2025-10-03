@@ -2,6 +2,8 @@ package com.example.ai_diary.backend.domain;
 
 import java.time.Instant;
 
+import com.example.ai_diary.backend.util.EmailNormalizer;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -52,7 +54,7 @@ public class User {
 	}
 
 	public void setEmail(String email) {
-		this.email = email;
+		this.email = EmailNormalizer.normalize(email);
 	}
 
 	public String getPasswordHash() {
