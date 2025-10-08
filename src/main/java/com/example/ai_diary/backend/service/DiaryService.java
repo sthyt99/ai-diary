@@ -22,7 +22,7 @@ public class DiaryService {
 	private final DiaryRepository diaryRepository;
 	private final UserRepository userRepository;
 
-	public DiaryService(DiaryRepository diaryRepository, UserRepository userRepository) { // ★ 変更
+	public DiaryService(DiaryRepository diaryRepository, UserRepository userRepository) {
 		this.diaryRepository = diaryRepository;
 		this.userRepository = userRepository;
 	}
