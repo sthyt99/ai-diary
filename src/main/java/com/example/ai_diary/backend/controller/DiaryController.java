@@ -42,7 +42,7 @@ public class DiaryController {
 			@AuthenticationPrincipal UserDetails principal) {
 
 		Long userId = userRepository.findByEmail(principal.getUsername()).orElseThrow().getId();
-		Diary diary = diaryService.create(userId, req.getContent(), req.getVisibility());
+		Diary diary = diaryService.create(userId, req.getContent(), req.getVisibility(), req.getStyles());
 		Response res = toResponse(diary);
 		return ResponseEntity.ok(res);
 	}

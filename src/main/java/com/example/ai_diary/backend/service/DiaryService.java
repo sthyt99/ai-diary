@@ -1,12 +1,15 @@
 package com.example.ai_diary.backend.service;
 
+import java.util.List;
 import java.util.NoSuchElementException;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+import com.example.ai_diary.backend.ai.AiTransformService;
 import com.example.ai_diary.backend.domain.Diary;
 import com.example.ai_diary.backend.domain.Visibility;
 import com.example.ai_diary.backend.exception.ErrorMessages;
@@ -19,20 +22,26 @@ import com.example.ai_diary.backend.repository.UserRepository;
 @Service
 public class DiaryService {
 
+	private static final int PAGE_SIZE_MAX = 50;
+
 	private final DiaryRepository diaryRepository;
 	private final UserRepository userRepository;
+	private final AiTransformService aiTransformService;
 
-	public DiaryService(DiaryRepository diaryRepository, UserRepository userRepository) {
+	public DiaryService(DiaryRepository diaryRepository, UserRepository userRepository,
+			AiTransformService aiTransformService) {
 		this.diaryRepository = diaryRepository;
 		this.userRepository = userRepository;
+		this.aiTransformService = aiTransformService;
 	}
 
 	/**
 	 * 日記作成処理
 	 */
-	public Diary create(Long userId, String content, Visibility visibility) {
+	@Transactional
+	public Diary create(Long userId, String content, Visibility visibility, List<String> styles) {
 
-		String normalized = (content == null) ? null : content.trim();
+		String normalized = (content == null) ? null : content.strip();
 
 		if (normalized == null || normalized.isEmpty()) {
 			throw new IllegalArgumentException(ErrorMessages.DIARY_CONTENT_EMPTY);
@@ -48,6 +57,15 @@ public class DiaryService {
 		d.setUserId(userId);
 		d.setContent(normalized);
 		d.setVisibility(visibility != null ? visibility : Visibility.PRIVATE);
+
+		// AI生成
+		try {
+			String aiJson = aiTransformService.transformToJson(normalized, styles);
+			d.setContentAi(aiJson);
+		} catch (Exception ignore) {
+			d.setContentAi(null);
+		}
+
 		return diaryRepository.save(d);
 	}
 
@@ -57,7 +75,15 @@ public class DiaryService {
 	 * 作成日時の新しい順 (CreatedAt の降順) で
 	 * ページング付きで取得する
 	 */
+	@Transactional(readOnly = true)
 	public Page<Diary> publicFeed(int page, int size) {
+		if (page < 0)
+			page = 0;
+		if (size <= 0)
+			size = 20;
+		if (size > PAGE_SIZE_MAX)
+			size = PAGE_SIZE_MAX;
+
 		PageRequest pageable = PageRequest.of(page, size);
 		return diaryRepository.findByVisibilityOrderByCreatedAtDesc(Visibility.PUBLIC, pageable);
 	}
@@ -74,6 +100,7 @@ public class DiaryService {
 	* @throws IllegalArgumentException アクセス権がない場合
 	* @throws NoSuchElementException   日記が存在しない場合
 	*/
+	@Transactional(readOnly = true)
 	public Diary getOneWithVisibilityCheck(Long diaryId, Long requesterId) {
 		Diary diary = diaryRepository.findById(diaryId)
 				.orElseThrow(() -> new NoSuchElementException(ErrorMessages.DIARY_NOT_FOUND));
@@ -84,10 +111,6 @@ public class DiaryService {
 		case PUBLIC:
 			return diary;
 		case PRIVATE:
-			if (requesterId != null && requesterId.equals(diary.getUserId())) {
-				return diary;
-			}
-			throw new AccessDeniedException(ErrorMessages.DIARY_ACCESS_DENIED);
 		case LIMITED:
 			// 今は本人のみ扱い（友達限定を実装する際、判定追加）
 			if (requesterId != null && requesterId.equals(diary.getUserId())) {
@@ -98,5 +121,18 @@ public class DiaryService {
 		default:
 			throw new AccessDeniedException(ErrorMessages.DIARY_ACCESS_DENIED);
 		}
+	}
+
+	/**
+	 * 日記を削除する
+	 */
+	@Transactional
+	public void deleteOwn(Long diaryId, Long meUserId) {
+		Diary d = diaryRepository.findById(diaryId)
+				.orElseThrow(() -> new NoSuchElementException(ErrorMessages.DIARY_NOT_FOUND));
+		if (!d.getUserId().equals(meUserId)) {
+			throw new AccessDeniedException(ErrorMessages.FORBIDDEN);
+		}
+		diaryRepository.delete(d);
 	}
 }

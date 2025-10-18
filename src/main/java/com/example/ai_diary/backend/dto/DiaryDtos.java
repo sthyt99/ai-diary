@@ -1,6 +1,7 @@
 package com.example.ai_diary.backend.dto;
 
 import java.time.Instant;
+import java.util.List;
 
 import com.example.ai_diary.backend.domain.Visibility;
 
@@ -16,12 +17,15 @@ public class DiaryDtos {
 		@NotBlank
 		private String content;
 		private Visibility visibility;
+		private List<String> styles;
 		
 		// getters/setters
         public String getContent() { return content; }
         public void setContent(String content) { this.content = content; }
         public Visibility getVisibility() { return visibility; }
         public void setVisibility(Visibility visibility) { this.visibility = visibility; }
+        public List<String> getStyles() { return styles; }
+        public void setStyles(List<String> styles) { this.styles = styles; }
 	}
 	
 	/**

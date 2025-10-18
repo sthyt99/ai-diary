@@ -10,13 +10,12 @@ import java.util.Optional;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.data.domain.Page;
+import org.mockito.ArgumentCaptor;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
-import org.springframework.security.access.AccessDeniedException;
 
+import com.example.ai_diary.backend.ai.AiTransformService;
 import com.example.ai_diary.backend.domain.Diary;
-import com.example.ai_diary.backend.domain.User;
 import com.example.ai_diary.backend.domain.Visibility;
 import com.example.ai_diary.backend.repository.DiaryRepository;
 import com.example.ai_diary.backend.repository.UserRepository;
@@ -25,87 +24,138 @@ class DiaryServiceTest {
 
     private DiaryRepository diaryRepository;
     private UserRepository userRepository;
+    private AiTransformService aiTransformService;
     private DiaryService diaryService;
 
     @BeforeEach
     void setUp() {
         diaryRepository = mock(DiaryRepository.class);
         userRepository = mock(UserRepository.class);
-        diaryService = new DiaryService(diaryRepository, userRepository);
+        aiTransformService = mock(AiTransformService.class);
+        diaryService = new DiaryService(diaryRepository, userRepository, aiTransformService);
     }
 
     @Test
-    void create_success_privateByDefault_andUserExists() {
-        when(userRepository.findById(1L)).thenReturn(Optional.of(new User()));
+    void create_success_setsContentAi_andDoesNotOverwriteContent() {
+        // arrange
+        when(userRepository.findById(1L)).thenReturn(Optional.of(new com.example.ai_diary.backend.domain.User()));
+        when(aiTransformService.transformToJson(anyString(), anyList())).thenReturn("{\"summary\":\"要約\"}");
         when(diaryRepository.save(any(Diary.class))).thenAnswer(inv -> {
             Diary d = inv.getArgument(0);
-            d.setId(10L);
+            d.setId(100L);
             return d;
         });
 
-        Diary d = diaryService.create(1L, " hello ", null);
+        // act
+        Diary d = diaryService.create(1L, "  今日は散歩した  ", Visibility.PUBLIC, List.of("SUMMARY","HAIKU"));
 
-        assertEquals(10L, d.getId());
-        assertEquals(1L, d.getUserId());
-        assertEquals("hello", d.getContent());
-        assertEquals(Visibility.PRIVATE, d.getVisibility());
+        // assert
+        assertEquals(100L, d.getId());
+        assertEquals("今日は散歩した", d.getContent(), "本文はtrimのみで上書きされない");
+        assertEquals(Visibility.PUBLIC, d.getVisibility());
+        assertNotNull(d.getContentAi(), "AI生成結果が格納される");
+        assertTrue(d.getContentAi().contains("summary"));
+
+        // 保存時のエンティティを確認
+        ArgumentCaptor<Diary> cap = ArgumentCaptor.forClass(Diary.class);
+        verify(diaryRepository).save(cap.capture());
+        Diary saved = cap.getValue();
+        assertEquals("今日は散歩した", saved.getContent());
+        assertEquals(d.getContentAi(), saved.getContentAi());
+    }
+
+    @Test
+    void create_aiFailure_stillSaves_withContentAiNull() {
+        when(userRepository.findById(1L)).thenReturn(Optional.of(new com.example.ai_diary.backend.domain.User()));
+        when(aiTransformService.transformToJson(anyString(), anyList())).thenThrow(new RuntimeException("timeout"));
+        when(diaryRepository.save(any(Diary.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        Diary d = diaryService.create(1L, "本文", Visibility.PRIVATE, List.of("SUMMARY"));
+
+        assertEquals("本文", d.getContent());
+        assertNull(d.getContentAi(), "AI失敗時はnull");
+        verify(diaryRepository, times(1)).save(any(Diary.class));
     }
 
     @Test
     void create_missingContent_throwsIllegalArgument() {
-        assertThrows(IllegalArgumentException.class, () -> diaryService.create(1L, "   ", Visibility.PUBLIC));
+        assertThrows(IllegalArgumentException.class,
+                () -> diaryService.create(1L, "   ", Visibility.PUBLIC, List.of("SUMMARY")));
+        assertThrows(IllegalArgumentException.class,
+                () -> diaryService.create(1L, null, Visibility.PUBLIC, List.of("SUMMARY")));
+    }
+
+    @Test
+    void create_missingUserId_throwsIllegalArgument() {
+        assertThrows(IllegalArgumentException.class,
+                () -> diaryService.create(null, "本文", Visibility.PUBLIC, List.of("SUMMARY")));
     }
 
     @Test
     void create_userNotFound_throwsNoSuchElement() {
-        when(userRepository.findById(2L)).thenReturn(Optional.empty());
-        assertThrows(NoSuchElementException.class, () -> diaryService.create(2L, "x", Visibility.PUBLIC));
-    }
-
-    @Test
-    void publicFeed_returnsPage() {
-        Page<Diary> page = new PageImpl<>(List.of(new Diary()));
-        when(diaryRepository.findByVisibilityOrderByCreatedAtDesc(eq(Visibility.PUBLIC), any(Pageable.class)))
-                .thenReturn(page);
-
-        Page<Diary> got = diaryService.publicFeed(0,20);
-        assertEquals(1, got.getTotalElements());
-    }
-
-    @Test
-    void getOneWithVisibilityCheck_public_ok() {
-        Diary d = new Diary();
-        d.setId(5L); d.setUserId(1L); d.setVisibility(Visibility.PUBLIC);
-        when(diaryRepository.findById(5L)).thenReturn(Optional.of(d));
-
-        Diary got = diaryService.getOneWithVisibilityCheck(5L, null);
-        assertEquals(5L, got.getId());
-    }
-
-    @Test
-    void getOneWithVisibilityCheck_private_owner_ok() {
-        Diary d = new Diary();
-        d.setId(6L); d.setUserId(99L); d.setVisibility(Visibility.PRIVATE);
-        when(diaryRepository.findById(6L)).thenReturn(Optional.of(d));
-
-        Diary got = diaryService.getOneWithVisibilityCheck(6L, 99L);
-        assertEquals(6L, got.getId());
-    }
-
-    @Test
-    void getOneWithVisibilityCheck_private_other_forbidden() {
-        Diary d = new Diary();
-        d.setId(7L); d.setUserId(100L); d.setVisibility(Visibility.PRIVATE);
-        when(diaryRepository.findById(7L)).thenReturn(Optional.of(d));
-
-        assertThrows(AccessDeniedException.class,
-                () -> diaryService.getOneWithVisibilityCheck(7L, 101L));
-    }
-
-    @Test
-    void getOneWithVisibilityCheck_notFound_404() {
-        when(diaryRepository.findById(8L)).thenReturn(Optional.empty());
+        when(userRepository.findById(9L)).thenReturn(Optional.empty());
         assertThrows(NoSuchElementException.class,
-                () -> diaryService.getOneWithVisibilityCheck(8L, 1L));
+                () -> diaryService.create(9L, "本文", Visibility.PUBLIC, List.of("SUMMARY")));
+    }
+
+    @Test
+    void publicFeed_respectsMaxPageSize50_andUsesPublicVisibility() {
+        // arrange
+        when(diaryRepository.findByVisibilityOrderByCreatedAtDesc(eq(Visibility.PUBLIC), any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of(new Diary())));
+
+        // act
+        diaryService.publicFeed(2, 100); // size=100 を要求 → 50 に丸める仕様
+
+        // assert: 渡された Pageable を検証
+        ArgumentCaptor<Pageable> cap = ArgumentCaptor.forClass(Pageable.class);
+        verify(diaryRepository).findByVisibilityOrderByCreatedAtDesc(eq(Visibility.PUBLIC), cap.capture());
+        Pageable pg = cap.getValue();
+        assertEquals(2, pg.getPageNumber());
+        assertEquals(50, pg.getPageSize(), "サイズは上限50に丸められる");
+    }
+
+    @Test
+    void getOneWithVisibilityCheck_public_anyoneOk() {
+        Diary d = new Diary();
+        d.setId(10L); d.setUserId(1L); d.setVisibility(Visibility.PUBLIC);
+        when(diaryRepository.findById(10L)).thenReturn(Optional.of(d));
+
+        Diary got = diaryService.getOneWithVisibilityCheck(10L, null);
+        assertEquals(10L, got.getId());
+    }
+
+    @Test
+    void getOneWithVisibilityCheck_private_ownerOnly() {
+        Diary d = new Diary();
+        d.setId(11L); d.setUserId(99L); d.setVisibility(Visibility.PRIVATE);
+        when(diaryRepository.findById(11L)).thenReturn(Optional.of(d));
+
+        // 所有者 → OK
+        assertEquals(11L, diaryService.getOneWithVisibilityCheck(11L, 99L).getId());
+        // 他人 → 403
+        assertThrows(org.springframework.security.access.AccessDeniedException.class,
+                () -> diaryService.getOneWithVisibilityCheck(11L, 100L));
+        // 未ログイン → 403
+        assertThrows(org.springframework.security.access.AccessDeniedException.class,
+                () -> diaryService.getOneWithVisibilityCheck(11L, null));
+    }
+
+    @Test
+    void getOneWithVisibilityCheck_limited_nowSameAsOwnerOnly() {
+        Diary d = new Diary();
+        d.setId(12L); d.setUserId(7L); d.setVisibility(Visibility.LIMITED);
+        when(diaryRepository.findById(12L)).thenReturn(Optional.of(d));
+
+        assertEquals(12L, diaryService.getOneWithVisibilityCheck(12L, 7L).getId());
+        assertThrows(org.springframework.security.access.AccessDeniedException.class,
+                () -> diaryService.getOneWithVisibilityCheck(12L, 8L));
+    }
+
+    @Test
+    void getOneWithVisibilityCheck_notFound_throws404() {
+        when(diaryRepository.findById(13L)).thenReturn(Optional.empty());
+        assertThrows(NoSuchElementException.class,
+                () -> diaryService.getOneWithVisibilityCheck(13L, 1L));
     }
 }
