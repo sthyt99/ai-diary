@@ -33,5 +33,6 @@ build/
 .vscode/
 
 # Spring Boot 設定ファイル（機密情報）
-application.properties
+src/main/resources/application.properties
+
 
