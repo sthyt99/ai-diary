@@ -20,7 +20,8 @@ public class AuthDtos {
 		@Size(min = 8, max = 128)
 		private String password;
 		
-		@NotBlank @Size(max = 64)
+		@NotBlank
+		@Size(max = 64)
 		private String displayName;
 		
 		// getters/setters

@@ -6,6 +6,8 @@ import java.util.List;
 import com.example.ai_diary.backend.domain.Visibility;
 
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
 
 public class DiaryDtos {
 
@@ -15,9 +17,11 @@ public class DiaryDtos {
 	public static class CreateRequest {
 
 		@NotBlank
+		@Size(max=4000)
 		private String content;
 		private Visibility visibility;
-		private List<String> styles;
+		@Size(max=6)
+		private List<@Pattern(regexp = "(?i)SUMMARY|HAIKU|QUOTE")String> styles;
 		
 		// getters/setters
         public String getContent() { return content; }

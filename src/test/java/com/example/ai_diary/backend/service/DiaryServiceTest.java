@@ -15,6 +15,7 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 
 import com.example.ai_diary.backend.ai.AiTransformService;
+import com.example.ai_diary.backend.config.PagingProperties;
 import com.example.ai_diary.backend.domain.Diary;
 import com.example.ai_diary.backend.domain.Visibility;
 import com.example.ai_diary.backend.repository.DiaryRepository;
@@ -26,13 +27,14 @@ class DiaryServiceTest {
     private UserRepository userRepository;
     private AiTransformService aiTransformService;
     private DiaryService diaryService;
+    private PagingProperties paging;
 
     @BeforeEach
     void setUp() {
         diaryRepository = mock(DiaryRepository.class);
         userRepository = mock(UserRepository.class);
         aiTransformService = mock(AiTransformService.class);
-        diaryService = new DiaryService(diaryRepository, userRepository, aiTransformService);
+        diaryService = new DiaryService(diaryRepository, userRepository, aiTransformService, paging);
     }
 
     @Test
