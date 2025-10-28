@@ -19,6 +19,8 @@ import com.example.ai_diary.backend.repository.DiaryRepository;
 import com.example.ai_diary.backend.repository.UserRepository;
 import com.example.ai_diary.backend.service.DiaryService;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.validation.Valid;
 
 /**
@@ -37,6 +39,8 @@ public class DiaryController {
 		this.userRepository = userRepository;
 	}
 
+	@Operation(summary="日記作成", description="AI生成はstyles指定時のみ。JWT必須。")
+	@SecurityRequirement(name = "bearerAuth")
 	@PostMapping("/api/diary")
 	public ResponseEntity<Response> create(@Valid @RequestBody CreateRequest req,
 			@AuthenticationPrincipal UserDetails principal) {

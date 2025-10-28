@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.example.ai_diary.backend.ai.AiTransformService;
+import com.example.ai_diary.backend.config.PagingProperties;
 import com.example.ai_diary.backend.domain.Diary;
 import com.example.ai_diary.backend.domain.Visibility;
 import com.example.ai_diary.backend.exception.ErrorMessages;
@@ -22,17 +23,17 @@ import com.example.ai_diary.backend.repository.UserRepository;
 @Service
 public class DiaryService {
 
-	private static final int PAGE_SIZE_MAX = 50;
-
 	private final DiaryRepository diaryRepository;
 	private final UserRepository userRepository;
 	private final AiTransformService aiTransformService;
+	private final PagingProperties paging;
 
 	public DiaryService(DiaryRepository diaryRepository, UserRepository userRepository,
-			AiTransformService aiTransformService) {
+			AiTransformService aiTransformService, PagingProperties paging) {
 		this.diaryRepository = diaryRepository;
 		this.userRepository = userRepository;
 		this.aiTransformService = aiTransformService;
+		this.paging = paging;
 	}
 
 	/**
@@ -79,13 +80,15 @@ public class DiaryService {
 	public Page<Diary> publicFeed(int page, int size) {
 		if (page < 0)
 			page = 0;
-		if (size <= 0)
-			size = 20;
-		if (size > PAGE_SIZE_MAX)
-			size = PAGE_SIZE_MAX;
-
-		PageRequest pageable = PageRequest.of(page, size);
-		return diaryRepository.findByVisibilityOrderByCreatedAtDesc(Visibility.PUBLIC, pageable);
+		
+		int max = paging.getMaxSize();
+		int def = paging.getDefaultSize();
+		
+		size = (size <= 0) ? def : Math.min(size, max);
+		
+		PageRequest pr = PageRequest.of(page, size);
+		
+		return diaryRepository.findByVisibilityOrderByCreatedAtDesc(Visibility.PUBLIC, pr);
 	}
 
 	/**
