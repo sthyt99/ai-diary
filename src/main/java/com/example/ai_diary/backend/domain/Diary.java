@@ -2,6 +2,9 @@ package com.example.ai_diary.backend.domain;
 
 import java.time.Instant;
 
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -9,7 +12,6 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.Lob;
 import jakarta.persistence.Table;
 
 /**
@@ -30,12 +32,12 @@ public class Diary {
 	@Column(nullable = false, length = 16)
 	private Visibility visibility = Visibility.PRIVATE;
 
-	@Lob
-	@Column(nullable = false)
+	@JdbcTypeCode(SqlTypes.LONGVARCHAR)
+	@Column(nullable = false, columnDefinition = "text")
 	private String content;
 
-	@Lob
-	@Column(name = "content_ai")
+	@JdbcTypeCode(SqlTypes.JSON)
+	@Column(name="content_ai", columnDefinition="jsonb")
 	private String contentAi;
 
 	@Column(name = "created_at", nullable = false)

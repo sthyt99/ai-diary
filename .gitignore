@@ -34,5 +34,6 @@ build/
 
 # Spring Boot 設定ファイル（機密情報）
 src/main/resources/application.properties
+src/main/resources/application-postgres.properties
 
 
